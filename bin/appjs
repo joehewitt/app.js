@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+
+var argv = require('optimist').argv;
+var path = require('path');
+var WebServer = require('../lib/WebServer');
+
+require.paths.unshift(path.resolve('..'));
+
+if (argv.webserver) {
+	WebServer.serve(argv._[0]);
+}
+

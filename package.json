@@ -6,11 +6,15 @@
   "author": "Joe Hewitt <joe@joehewitt.com>",
   "contributors": [],
   "dependencies": {
-    "vows": ">=0.5.4",
+    "async": "",
+    "express": "",
+    "optimist": "",
     "uglify-js": "",
-    "underscore": ""
+    "underscore": "",
+    "vows": ">=0.5.4"
   },
   "version": "0.0.1",
+  "bin" : "./bin/appjs",
   "main": "./lib/appjs",
   "directories": { "test": "./test" },
   "engines": { "node": ">=0.4.0" }
