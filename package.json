@@ -7,14 +7,17 @@
   "contributors": [],
   "dependencies": {
     "async": "",
+    "cssmin": "",
     "express": "",
+    "jsdom": "",
+    "mime": "",
     "optimist": "",
     "uglify-js": "",
     "underscore": "",
     "vows": ">=0.5.4"
   },
   "version": "0.0.1",
-  "bin" : "./bin/appjs",
+  "bin" : {"appjs": "./bin/appjs", "appjsconvert": "./bin/appjsconvert"},
   "main": "./lib/appjs",
   "directories": { "test": "./test" },
   "engines": { "node": ">=0.4.0" }

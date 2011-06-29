@@ -28,6 +28,9 @@ function provide(name, module) {
             callbacks[i](name, module);
         }
     }
+    if (module.ready) {
+        require.ready(module.ready);
+    }
     if (name == mainModuleName) {
         isReady();
     }
@@ -224,6 +227,12 @@ require.normalize = normalize;
 function isReady(cb) {
     for (var i = 0; i < readies.length; ++i) {
         readies[i]();
+    }
+
+    var mainModule = require(mainModuleName);
+    var destination = mainModule.destination;
+    if (destination && destination.render) {
+        destination.render();
     }
 };
 
