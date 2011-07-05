@@ -37,7 +37,7 @@ vows.describe('appjs basics').addBatch({
         'renders': {
         	topic: function(app) {
         		var maker = new appjs.PageMaker(app, 'http://localhost:8081/', '/');
-        		maker.make(this.callback);
+        		maker.generatePage({}, this.callback);
         	},
 
 	        'as page': function(html) {
@@ -57,8 +57,8 @@ vows.describe('appjs basics').addBatch({
 
         'renders compressed': {
         	topic: function(app) {
-        		var maker = new appjs.PageMaker(app, 'http://localhost:8081/', '/', true, false, true);
-        		maker.make(this.callback);
+        		var maker = new appjs.PageMaker(app, 'http://localhost:8081/', '/');
+        		maker.generatePage({inlineScripts: true, inlineStyles: true, compress: true}, this.callback);
         	},
 
 	        'a page': function(html) {
