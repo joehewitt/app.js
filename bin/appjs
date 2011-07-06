@@ -34,25 +34,31 @@ var options = {
 };
 
 var moduleName = argv._[0];
-var loader = new Loader();
 
-appjs.loadApp(moduleName, loader, function(err, app) {
-	if (err) { console.log('Unable to find module ' + moduleName); return; }
+if (!moduleName) {
+	console.log("Module name required.");
+} else {
+	var loader = new Loader();
 
-	if (argv.dependencies) {
-		loader.traceDependencies(moduleName, true, function(err, results) {					
-			console.log(results);
-		});
-	} else if (argv.render) {	
-		var targetURL = typeof(argv.render) == 'string' ? argv.render : '/';
-		var localURL = url.format({protocol: 'http', hostname: "localhost", port:8081});
-		var baseURL = "/";
-		var pageMaker = new PageMaker(app, localURL, baseURL);
+	appjs.loadApp(moduleName, loader, function(err, app) {
+		if (err) { console.log('Unable to find module ' + moduleName); return; }
 
-		loader.loadURL(targetURL, pageMaker, options, function(err, result) {
-			console.log(result.source);
-		});
-	} else if (argv.server) {
-		WebServer.serve(app, parseInt(argv.port), options);
-	}
-});
+		if (argv.dependencies) {
+			loader.traceDependencies(moduleName, true, function(err, results) {					
+				console.log(results);
+			});
+		} else if (argv.render) {	
+			var targetURL = typeof(argv.render) == 'string' ? argv.render : '/';
+			var localURL = url.format({protocol: 'http', hostname: "localhost", port:8081});
+			var baseURL = "/";
+			var pageMaker = new PageMaker(app, localURL, baseURL);
+
+			loader.loadURL(targetURL, pageMaker, options, function(err, result) {
+				console.log(result.source);
+			});
+		} else if (argv.server) {
+			WebServer.serve(app, parseInt(argv.port), options);
+		}
+	});	
+}
+

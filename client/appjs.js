@@ -2,13 +2,14 @@
 (function() {
 
 var scriptBasePath = 'js';
-var staticBasePath = 'static';
-var mainModuleName = document.documentElement.getAttribute('app');
+var mainModuleName;
 var modules = {};
 var queue = {};
+var queued = 0;
 var lastDefines = [];
 var generators = [];
 var readies = [];
+var frozen = {};
 
 function require(name) {
     name = normalize(name);
@@ -36,17 +37,29 @@ function provide(name, module) {
     }
 }
 
-function define(deps, factory) {
+function define(id, deps, factory, freeze) {
     if (!factory) {
+        if (!deps) {
+            deps = id;
+            id = null;            
+        }
         factory = deps;
-        deps = [];
+        deps = id;
+        id = null;
     }
 
-    lastDefines[lastDefines.length] = {deps:deps, factory:factory};    
-}
-
-require.style = function(relativePath) {
-    lastDefines[lastDefines.length] = {style:relativePath};    
+    if (freeze) {
+        var source = factory+'';
+        var s1 = source.indexOf('/*');
+        var s2 = source.lastIndexOf('*/');
+        source = source.substr(s1+2, s2-(s1+2));
+        frozen[id] = {deps:deps, source:source};
+    } else {
+        lastDefines[lastDefines.length] = {deps:deps, factory:factory};
+        if (id) {
+            finishDefininingModule(id);
+        }
+    }
 }
 
 require.addGenerator = function(callback) {
@@ -79,22 +92,23 @@ function loadScript(name, callback) {
             queue[name].push(callback);
         } else {
             queue[name] = [callback];
+            ++queued;
 
             var url = urlForScript(name);
-            var cached = document.getElementById('appjs/js/'+name);
+            var cached = frozen[name];
             if (cached) {
-                var source = cached.innerHTML;
-                cached.parentNode.removeChild(cached);
+                var source = cached.source;
+                delete frozen[name];
                 if (source.length) {
-                    eval(source);
-                    finishDefininingModule(name);
+                    var fn = eval(source);
+                    defineModule(name, cached.deps, fn);
                 } else {
                     provide(name, {});
                 }
             } else {
                 var script = document.createElement('script');
                 script.type = 'text/javascript';
-                script.src = url;
+                script.src = url + location.search;
                 script.onload = function() {
                     script.parentNode.removeChild(script);
                     finishDefininingModule(name);
@@ -112,29 +126,14 @@ function loadScript(name, callback) {
 function finishDefininingModule(name) {
     var defines = lastDefines;
     lastDefines = [];
+
+    if (!mainModuleName) {
+        mainModuleName = name;
+    }
     
     for (var i = 0; i < defines.length; ++i) {
         var info = defines[i];
-        if (info.style) {
-            defineStyle(info.style, name);
-        } else {
-            defineModule(name, info.deps, info.factory);
-        }
-    }
-}
-
-function defineStyle(relativePath, baseName) {
-    var path = normalize(relativePath, baseName);
-    var url = urlForStatic(path);
-    var id = 'appjs/'+url;
-    var cached = document.getElementById(id);
-    if (!cached) {
-        var link = document.createElement('link');
-        link.id = id;
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = url;
-        document.head.appendChild(link);
+        defineModule(name, info.deps, info.factory);
     }
 }
 
@@ -210,10 +209,6 @@ function normalize(name, baseName) {
     }
 }
 
-function urlForStatic(name) {
-    return staticBasePath + '/' + name;
-}
-
 function urlForScript(name) {
     var ext = name.substr(name.length-3);
     if (name.indexOf('.') == -1) {
@@ -240,7 +235,5 @@ function isReady(cb) {
 
 window.require = require;
 window.define = define;
-
-require(mainModuleName);
     
 })();
