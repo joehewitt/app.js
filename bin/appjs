@@ -45,7 +45,9 @@ if (!moduleName) {
 
 		if (argv.dependencies) {
 			loader.traceDependencies(moduleName, true, function(err, results) {					
-				console.log(results);
+				var js = _.keys(results.js);
+				var css = results.css;
+				console.log({js: js, css: css});
 			});
 		} else if (argv.render) {	
 			var targetURL = typeof(argv.render) == 'string' ? argv.render : '/';
