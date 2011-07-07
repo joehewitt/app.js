@@ -7,7 +7,7 @@ var argv = require('optimist').argv,
 
 var appjs = require('../lib/appjs'),
 	Loader = require('../lib/Loader').Loader,
-	PageMaker = require('../lib/PageMaker').PageMaker,
+	Renderer = require('../lib/Renderer').Renderer,
 	WebServer = require('../lib/WebServer');
 
 // Allows you to import the package located in the current working directory
@@ -17,49 +17,50 @@ var defaults = {
 	inlineScripts: true,
 	inlineStyles: true,
 	inlineImages: true,
-	inlineContent: true,
+	inlineContent: false,
 	compress: true,
 };
 
 var options = {
 	inlineScripts: 'inlineScripts' in argv ? argv.inlineScripts != 'false'
 				   : ('inline' in argv ? argv.inline != 'false' : defaults.inlineScripts),
-	inlineStyles: 'inlineSTyles' in argv ? argv.inlineStyles != 'false'
+	inlineStyles: 'inlineStyles' in argv ? argv.inlineStyles != 'false'
 				   : ('inline' in argv ? argv.inline != 'false' : defaults.inlineStyles),
 	inlineImages: 'inlineImages' in argv ? argv.inlineImages != 'false'
 				   : ('inline' in argv ? argv.inline != 'false' : defaults.inlineImages),
-	inlineImages: 'inlineImages' in argv ? argv.inlineImages != 'false'
-				   : ('inline' in argv ? argv.inline != 'false' : defaults.inlineImages),
+	inlineContent: 'inlineContent' in argv ? argv.inlineContent != 'false'
+				   : ('inline' in argv ? argv.inline != 'false' : defaults.inlineContent),
 	compress: 'compress' in argv ? argv.compress != 'false' : defaults.compress,
 };
 
 var moduleName = argv._[0];
+var clientModuleName = argv.client || moduleName;
 
 if (!moduleName) {
 	console.log("Module name required.");
 } else {
 	var loader = new Loader();
 
-	appjs.loadApp(moduleName, loader, function(err, app) {
+	appjs.loadApp(moduleName, clientModuleName, loader, function(err, app) {
 		if (err) { console.log('Unable to find module ' + moduleName); return; }
 
 		if (argv.dependencies) {
-			loader.traceDependencies(moduleName, true, function(err, results) {					
+			loader.traceDependencies(clientModuleName, true, function(err, results) {					
 				var js = _.keys(results.js);
 				var css = results.css;
-				console.log({js: js, css: css});
+				console.log(JSON.stringify({js: js, css: css}));
 			});
 		} else if (argv.render) {	
 			var targetURL = typeof(argv.render) == 'string' ? argv.render : '/';
 			var localURL = url.format({protocol: 'http', hostname: "localhost", port:8081});
 			var baseURL = "/";
-			var pageMaker = new PageMaker(app, localURL, baseURL);
+			var renderer = new Renderer(app, localURL, baseURL);
 
-			loader.loadURL(targetURL, pageMaker, options, function(err, result) {
-				console.log(result.source);
+			loader.loadURL(targetURL, renderer, options, function(err, result) {
+				console.log(JSON.stringify(result));
 			});
 		} else if (argv.server) {
-			WebServer.serve(app, parseInt(argv.port), options);
+			WebServer.listen(app, parseInt(argv.port), options);
 		}
 	});	
 }

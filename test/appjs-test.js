@@ -14,7 +14,7 @@ vows.describe('appjs basics').addBatch({
     'module': {
         topic: function() {
         	var loader = new appjs.Loader();
-        	appjs.loadApp("testmod1", loader, this.callback);
+        	appjs.loadApp("testmod1", "testmod1", loader, this.callback);
 	    },
 
         'has deps': {
@@ -36,7 +36,7 @@ vows.describe('appjs basics').addBatch({
 
         'renders': {
         	topic: function(app) {
-        		var maker = new appjs.PageMaker(app, 'http://localhost:8081/', '/');
+        		var maker = new appjs.Renderer(app, 'http://localhost:8081/', '/');
         		maker.generatePage({}, this.callback);
         	},
 
@@ -57,7 +57,7 @@ vows.describe('appjs basics').addBatch({
 
         'renders compressed': {
         	topic: function(app) {
-        		var maker = new appjs.PageMaker(app, 'http://localhost:8081/', '/');
+        		var maker = new appjs.Renderer(app, 'http://localhost:8081/', '/');
         		maker.generatePage({inlineScripts: true, inlineStyles: true, compress: true}, this.callback);
         	},
 

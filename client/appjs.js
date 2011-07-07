@@ -1,7 +1,7 @@
 
 (function() {
 
-var scriptBasePath = 'js';
+var scriptBasePath = 'app.js/js';
 var mainModuleName;
 var modules = {};
 var queue = {};
@@ -37,7 +37,7 @@ function provide(name, module) {
     }
 }
 
-function define(id, deps, factory, freeze) {
+function define(id, deps, factory) {
     if (!factory) {
         if (!deps) {
             deps = id;
@@ -48,12 +48,8 @@ function define(id, deps, factory, freeze) {
         id = null;
     }
 
-    if (freeze) {
-        var source = factory+'';
-        var s1 = source.indexOf('/*');
-        var s2 = source.lastIndexOf('*/');
-        source = source.substr(s1+2, s2-(s1+2));
-        frozen[id] = {deps:deps, source:source};
+    if (typeof(factory) == "string") {
+        frozen[id] = {deps:deps, source:factory};
     } else {
         lastDefines[lastDefines.length] = {deps:deps, factory:factory};
         if (id) {
@@ -110,11 +106,13 @@ function loadScript(name, callback) {
                 script.type = 'text/javascript';
                 script.src = url + location.search;
                 script.onload = function() {
-                    script.parentNode.removeChild(script);
+                    if (script.parentNode) 
+                        script.parentNode.removeChild(script);
                     finishDefininingModule(name);
                 };
                 script.onerror = function() {
-                    script.parentNode.removeChild(script);
+                    if (script.parentNode)
+                        script.parentNode.removeChild(script);
                 };
 
                 document.body.appendChild(script);
@@ -225,10 +223,14 @@ function isReady(cb) {
     }
 
     var mainModule = require(mainModuleName);
-    var destination = mainModule.destination;
-    if (destination && destination.render) {
-        destination.render();
+    var router = mainModule.router;
+    if (router) {
+        router(location.href, document.baseURI);
     }
+    // var destination = mainModule.destination;
+    // if (destination && destination.render) {
+    //     destination.render();
+    // }
 };
 
 // *************************************************************************************************
