@@ -57,7 +57,7 @@ vows.describe('appjs basics').addBatch({
         'renders compressed': {
         	topic: function(app) {
         		var maker = new appjs.Renderer(app, 'http://localhost:8081/', '/');
-        		maker.generatePage({inlineScripts: true, inlineStyles: true, compress: true}, this.callback);
+        		maker.generatePage({js: "inline", css: "inline"}, this.callback);
         	},
 
 	        'a page': function(html) {
