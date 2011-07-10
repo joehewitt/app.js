@@ -13,8 +13,7 @@ var appjs = require('appjs');
 vows.describe('appjs basics').addBatch({
     'module': {
         topic: function() {
-        	var loader = new appjs.Loader();
-        	appjs.loadApp("testmod1", "testmod1", loader, this.callback);
+        	appjs.loadApp("testmod1", this.callback);
 	    },
 
         'has deps': {
