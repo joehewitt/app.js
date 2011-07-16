@@ -2,6 +2,10 @@
   "name": "appjs",
   "description": "Packages Node modules as browser apps.",
   "url": "http://github.com/joehewitt/appjs",
+  "repository": {
+      "type": "git",
+      "url" : "http://github.com/joehewitt/appjs.git"
+  },
   "keywords": ["compressor"],
   "author": "Joe Hewitt <joe@joehewitt.com>",
   "contributors": [],
