@@ -4,7 +4,4 @@ var argv = require('optimist').argv,
 	path = require('path'),
 	appjs = require('../lib/appjs');
 
-// Allows you to import the package located in the current working directory
-require.paths.unshift(path.resolve('..'));
-
 appjs.run(argv);
