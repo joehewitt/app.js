@@ -43,9 +43,12 @@ function define(id, deps, factory) {
 }
 window.define = define;
 
+var hasCache = {};
 function has(feature) {
-    if (feature == 'appjs') {
-        return !!window.appjs;
+    if (feature in hasCache) {
+        return hasCache[feature];
+    } else if (feature == 'appjs') {
+        return hasCache[feature] = !!window.appjs;
     } else {
         // XXXjoe Include the real has.js
         return false;
