@@ -4,4 +4,7 @@ var argv = require('optimist').argv,
 	path = require('path'),
 	appjs = require('../lib/appjs');
 
+// Makes it convenient to require modules in the working directory
+require.paths.unshift(path.resolve('.'));
+
 appjs.run(argv);

@@ -12,30 +12,14 @@ var readies = [];
 var frozen = {};
 
 function require(name) {
-    name = normalize(name);
+    name = require.resolve(name);
     if (modules[name]) {
-        return modules[name];
+        return modules[name].exports;
     } else if (!queue[name]) {
         loadScript(name, function(){});
     }
 }
-
-function provide(name, module) {
-    modules[name] = module;
-    if (queue[name]) {
-        var callbacks = queue[name];
-        delete queue[name];
-        for (var i = 0; i < callbacks.length; ++i) {
-            callbacks[i](name, module);
-        }
-    }
-    if (module.ready) {
-        require.ready(module.ready);
-    }
-    if (name == mainModuleName) {
-        isReady();
-    }
-}
+window.require = require;
 
 function define(id, deps, factory) {
     if (!factory) {
@@ -57,6 +41,17 @@ function define(id, deps, factory) {
         }
     }
 }
+window.define = define;
+
+function has(feature) {
+    if (feature == 'appjs') {
+        return !!window.appjs;
+    } else {
+        // XXXjoe Include the real has.js
+        return false;
+    }
+}
+window.has = has;
 
 require.addGenerator = function(callback) {
     generators[generators.length] = callback;
@@ -78,7 +73,48 @@ require.ready = function(cb) {
     }
 };
 
+require.resolve = function(name, baseName) {
+    if (name[0] == '.') {
+        // Relative paths inside of root modules are contained within the module, not its parent
+        var absolutePath = baseName.indexOf('/') == -1 ? baseName : dirname(baseName);
+        
+        var parts = name.split('/');
+        for (var i = 0; i < parts.length; ++i) {
+            var part = parts[i];
+            if (part == '.') {
+            } else if (part == '..') {
+                absolutePath = dirname(absolutePath);
+            } else {
+                absolutePath = absolutePath + '/' + part;
+            }
+        }
+        return absolutePath;
+    } else {
+        return name;
+    }
+};
+
 // *************************************************************************************************
+
+function provide(name, module) {
+    modules[name] = module;
+    if (queue[name]) {
+        var callbacks = queue[name];
+        delete queue[name];
+        for (var i = 0; i < callbacks.length; ++i) {
+            callbacks[i](name, module);
+        }
+    }
+    if (name == mainModuleName) {
+        for (var i = 0; i < readies.length; ++i) {
+            readies[i]();
+        }
+
+        if (has('appjs')) {
+            appjs.html = document.doctype + '\n' + document.outerHTML;
+        }
+    }
+}
 
 function loadScript(name, callback) {
     if (name in modules) {
@@ -90,7 +126,6 @@ function loadScript(name, callback) {
             queue[name] = [callback];
             ++queued;
 
-            var url = urlForScript(name);
             var cached = frozen[name];
             if (cached) {
                 var source = cached.source;
@@ -99,20 +134,26 @@ function loadScript(name, callback) {
                     var fn = eval(source);
                     defineModule(name, cached.deps, fn);
                 } else {
-                    provide(name, {});
+                    provide(name, {id: name});
                 }
+            } else if (has('appjs')) {
+                throw new Error("Not found")
             } else {
+                var url = urlForScript(name) + location.search;
+                
                 var script = document.createElement('script');
                 script.type = 'text/javascript';
-                script.src = url + location.search;
+                script.src = url;
                 script.onload = function() {
-                    if (script.parentNode) 
+                    if (script.parentNode) {
                         script.parentNode.removeChild(script);
+                    }
                     finishDefininingModule(name);
                 };
                 script.onerror = function() {
-                    if (script.parentNode)
+                    if (script.parentNode) {
                         script.parentNode.removeChild(script);
+                    }
                 };
 
                 document.body.appendChild(script);
@@ -137,18 +178,19 @@ function finishDefininingModule(name) {
 
 function defineModule(name, deps, factory) {
     loadDependencies(name, deps, function(name, params) {
-        var exportsIndex = deps.indexOf('exports');
-        var exports = modules[name] = {};
-        var previousModule = require.currentModule;
-        require.currentModule = name;
-        if (exportsIndex != -1) {
-            params[exportsIndex] = exports;
-            factory.apply(window, params);
-        } else {
-            exports = modules[name] = factory.apply(window, params);
+        var module = {id: name, exports: {}};
+        
+        function localRequire(name, baseName) {
+            return require(name, baseName);
         }
-        require.currentModule = previousModule;
-        provide(name, exports);
+        for (var p in require) {
+            localRequire[p] = require[p];
+        }
+
+        params.push(localRequire, module.exports, module);
+        factory.apply(window, params);
+
+        provide(name, module);
     });
 }
 
@@ -158,14 +200,14 @@ function loadDependencies(dependentId, deps, callback) {
         var remaining = deps.length;
         for (var i = 0; i < deps.length; ++i) {
             var name = deps[i];
-            if (name == 'exports') {
+            if (name == 'require' || name == 'exports' || name == 'module') {
                 if (!--remaining) {
                     callback(dependentId, params);
                 }
             } else {
-                name = deps[i] = normalize(name, dependentId);
+                name = deps[i] = require.resolve(name, dependentId);
                 loadScript(name, function(name, module) {
-                    params[deps.indexOf(name)] = module;
+                    params[deps.indexOf(name)] = module.exports;
                     if (!--remaining) {
                         callback(dependentId, params);
                     }
@@ -186,27 +228,6 @@ function dirname(path) {
     }
 }
 
-function normalize(name, baseName) {
-    if (name[0] == '.') {
-        // Relative paths inside of root modules are contained within the module, not its parent
-        var absolutePath = baseName.indexOf('/') == -1 ? baseName : dirname(baseName);
-        
-        var parts = name.split('/');
-        for (var i = 0; i < parts.length; ++i) {
-            var part = parts[i];
-            if (part == '.') {
-            } else if (part == '..') {
-                absolutePath = dirname(absolutePath);
-            } else {
-                absolutePath = absolutePath + '/' + part;
-            }
-        }
-        return absolutePath;
-    } else {
-        return name;
-    }
-}
-
 function urlForScript(name) {
     var ext = name.substr(name.length-3);
     if (name.indexOf('.') == -1) {
@@ -215,27 +236,5 @@ function urlForScript(name) {
 
     return scriptBasePath + '/' + name;
 }
-require.normalize = normalize;
 
-function isReady(cb) {
-    for (var i = 0; i < readies.length; ++i) {
-        readies[i]();
-    }
-
-    var mainModule = require(mainModuleName);
-    var router = mainModule.router;
-    if (router) {
-        router(location.href, document.baseURI);
-    }
-    // var destination = mainModule.destination;
-    // if (destination && destination.render) {
-    //     destination.render();
-    // }
-};
-
-// *************************************************************************************************
-
-window.require = require;
-window.define = define;
-    
 })();
