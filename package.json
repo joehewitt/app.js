@@ -1,10 +1,10 @@
 {
   "name": "appjs",
   "description": "Packages Node modules as browser apps.",
-  "url": "http://github.com/joehewitt/appjs",
+  "homepage": "http://github.com/joehewitt/app.js",
   "repository": {
       "type": "git",
-      "url" : "http://github.com/joehewitt/appjs.git"
+      "url" : "http://github.com/joehewitt/app.js.git"
   },
   "keywords": ["compressor"],
   "author": "Joe Hewitt <joe@joehewitt.com>",
@@ -12,10 +12,13 @@
   "dependencies": {
     "async": "",
     "cssmin": "",
+    "dandy": "https://github.com/joehewitt/dandy/tarball/master",
+    "diskcache": "https://github.com/joehewitt/diskcache/tarball/master",
     "express": "",
     "jsdom": "",
     "mime": "",
     "optimist": "",
+    "transformjs": "https://github.com/joehewitt/transformjs/tarball/master",
     "uglify-js": "",
     "underscore": "",
     "vows": ">=0.5.4"

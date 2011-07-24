@@ -10,16 +10,7 @@ var lastDefines = [];
 var generators = [];
 var readies = [];
 var frozen = {};
-
-function require(name) {
-    name = require.resolve(name);
-    if (modules[name]) {
-        return modules[name].exports;
-    } else if (!queue[name]) {
-        loadScript(name, function(){});
-    }
-}
-window.require = require;
+var hasCache = {};
 
 function define(id, deps, factory) {
     if (!factory) {
@@ -43,7 +34,6 @@ function define(id, deps, factory) {
 }
 window.define = define;
 
-var hasCache = {};
 function has(feature) {
     if (feature in hasCache) {
         return hasCache[feature];
@@ -69,11 +59,7 @@ require.generate = function() {
 };
 
 require.ready = function(cb) {
-    if (readies) {
-        readies[readies.length] = cb;
-    } else {
-        cb();
-    }
+    readies[readies.length] = cb;
 };
 
 require.resolve = function(name, baseName) {
@@ -98,6 +84,15 @@ require.resolve = function(name, baseName) {
 };
 
 // *************************************************************************************************
+
+function require(name) {
+    name = require.resolve(name);
+    if (modules[name]) {
+        return modules[name].exports;
+    } else if (!queue[name]) {
+        loadScript(name, function(){});
+    }
+}
 
 function provide(name, module) {
     modules[name] = module;
@@ -182,7 +177,8 @@ function finishDefininingModule(name) {
 function defineModule(name, deps, factory) {
     loadDependencies(name, deps, function(name, params) {
         var module = {id: name, exports: {}};
-        
+        modules[name] = module.exports;
+                
         function localRequire(name, baseName) {
             return require(name, baseName);
         }
@@ -241,3 +237,13 @@ function urlForScript(name) {
 }
 
 })();
+
+window.sandboxEval = function(js, sandbox) {
+    if (sandbox) {
+        with (sandbox) {
+            return eval(js);
+        }
+    } else {
+        return eval(js);
+    }
+}
