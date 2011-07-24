@@ -20,6 +20,7 @@
     "optimist": "",
     "transformjs": "https://github.com/joehewitt/transformjs/tarball/master",
     "uglify-js": "",
+    "ua-parser": "",
     "underscore": "",
     "vows": ">=0.5.4"
   },

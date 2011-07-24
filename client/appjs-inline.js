@@ -5,7 +5,6 @@ var mainModule;
 var modules = {};
 var readies = [];
 var frozen = {};
-var hasCache = {};
 
 function require() {
     
@@ -19,18 +18,6 @@ function freeze(fn, deps) {
     frozen[fn.name] = {fn: fn, deps: deps};
 }
 window.freeze = freeze;
-
-function has(feature) {
-    if (feature in hasCache) {
-        return hasCache[feature];
-    } else if (feature == 'appjs') {
-        return hasCache[feature] = !!window.appjs;
-    } else {
-        // XXXjoe Include the real has.js
-        return false;
-    }
-}
-window.has = has;
 
 function define(fn) {
     var module = modules[fn.name];

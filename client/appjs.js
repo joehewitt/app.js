@@ -10,7 +10,6 @@ var lastDefines = [];
 var generators = [];
 var readies = [];
 var frozen = {};
-var hasCache = {};
 
 function define(id, deps, factory) {
     if (!factory) {
@@ -33,18 +32,6 @@ function define(id, deps, factory) {
     }
 }
 window.define = define;
-
-function has(feature) {
-    if (feature in hasCache) {
-        return hasCache[feature];
-    } else if (feature == 'appjs') {
-        return hasCache[feature] = !!window.appjs;
-    } else {
-        // XXXjoe Include the real has.js
-        return false;
-    }
-}
-window.has = has;
 
 require.addGenerator = function(callback) {
     generators[generators.length] = callback;
