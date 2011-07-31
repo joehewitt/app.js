@@ -12,13 +12,13 @@
   "dependencies": {
     "async": "",
     "cssmin": "",
-    "dandy": "https://github.com/joehewitt/dandy/tarball/master",
-    "diskcache": "https://github.com/joehewitt/diskcache/tarball/master",
+    "dandy": "",
+    "diskcache": "",
     "express": "",
     "jsdom": "",
     "mime": "",
     "optimist": "",
-    "transformjs": "https://github.com/joehewitt/transformjs/tarball/master",
+    "transformjs": "",
     "uglify-js": "",
     "underscore": "",
     "vows": ">=0.5.4"
