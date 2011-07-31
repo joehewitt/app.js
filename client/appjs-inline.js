@@ -1,66 +1,70 @@
 
+/**
+ * This is the optimized version of app.js which does not allow dynamic loading of modules. All modules must
+ * be loaded and defined before the first require() call, or they will not be found.  The benefit of this
+ * restriction is that this file is 1/3 the size, and generated modules are smaller because they don't need
+ * to include dependency information. Is this tradeoff worth it? Time and more research will tell.
+ */
 (function() {
 
-var mainModule;
 var modules = {};
-var readies = [];
 var frozen = {};
+var readies = [];
+var mainModule;
 
-function require() {
-    
+function require(name) {
+    if (name in modules) {
+        return modules[name].exports;
+    } else {
+        return thaw(name);
+    }
 }
+window.require = require;
 
 require.ready = function(cb) {
     readies[readies.length] = cb;
 }
 
-function freeze(fn, deps) {
-    frozen[fn.name] = {fn: fn, deps: deps};
-}
-window.freeze = freeze;
-
-function define(fn) {
-    var module = modules[fn.name];
-    if (module) {
-        return module.exports;
+function define(name, fn) {
+    if (typeof(fn) == "string") {
+        frozen[name] =function() { return sandboxEval(fn).apply(this, arguments); }
     } else {
-        var entry = frozen[fn.name];
-        if (entry) {
-            if (!mainModule) {
-                mainModule = fn;    
-            }
-
-            var params = [];
-            for (var i = 0; i < entry.deps.length; ++i) {
-                params.push(define(entry.deps[i]));
-            }
-
-            function localRequire() {}
-            for (var p in require) {
-                localRequire[p] = require[p];
-            }
-
-            var module = {id: fn.name, exports: {}};
-            modules[fn.name] = module;
-            params.push(localRequire, module.exports, module);
-            fn.apply(window, params);
-
-            if (fn == mainModule) {
-                for (var i = 0; i < readies.length; ++i) {
-                    readies[i]();
-                }
-
-                if (has('appjs')) {
-                    appjs.html = document.doctype + '\n' + document.outerHTML;
-                }
-            }
-            return module.exports;
-        } else {
-            console.error('Module not found');
-        }
+        frozen[name] = fn;
     }
 }
 window.define = define;
+
+// *************************************************************************************************
+
+function thaw(name) {
+    var fn = frozen[name];
+    if (fn) {
+        delete frozen[name];
+
+        if (!mainModule) {
+            mainModule = name;    
+        }
+
+        var module = {id: name, exports: {}};
+        modules[name] = module;
+
+        var params = [require, module.exports, module];
+        fn.apply(window, params);
+
+        if (name == mainModule) {
+            for (var i = 0; i < readies.length; ++i) {
+                readies[i]();
+            }
+
+            if (has('appjs')) {
+                appjs.html = document.doctype + '\n' + document.outerHTML;
+            }
+        }
+        return module.exports;
+    } else {
+        console.error('Module "' + name + '" not found');
+    }
+}
 
 })();
 
@@ -72,4 +76,4 @@ window.sandboxEval = function(js, sandbox) {
     } else {
         return eval(js);
     }
-}
+};

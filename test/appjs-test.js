@@ -54,7 +54,7 @@ vows.describe('appjs basics').addBatch({
         	},
         },
 
-        'renders compressed': {
+        'renders inline': {
         	topic: function(app) {
         		var maker = new appjs.Renderer(app, 'http://localhost:8081/', '/');
         		maker.generatePage({js: "inline", css: "inline"}, this.callback);
@@ -77,7 +77,25 @@ vows.describe('appjs basics').addBatch({
 		    		'<body><script type="text/javascript" src="/app.js"></script></body>'+
 			    	'</html>');
         	},
-        }
+        },
 
+        'renders js inline': {
+            topic: function(app) {
+                var renderer = new appjs.Renderer(app, 'http://localhost:8081/', '/');
+                var options = {js: "source", minify: false, beautify: true, userAgent: "test"};
+                var url = '/app.js/js';
+                app.loader.loadURL(url, renderer, options, this.callback);
+            },
+
+            'a page': function(result) {
+                D&&D(result.body);
+                assert.equal(result.body,
+                    'define("testmod1", function() {"style testmod1/stylesheets/foo.css";'+
+                    'var a=require("testmod1/lib/dep1"),b=require("testmod1/lib/dep2")});\n'+
+                    'define("testmod1/lib/dep2", function() {});\ndefine("testmod1/lib/dep1", '+
+                    'function() {var a=1});\nrequire("testmod1");'
+                );
+            },
+        }
     },     
 }).export(module);

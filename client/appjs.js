@@ -1,4 +1,7 @@
 
+/**
+ * This is the development version of app.js which supports dynamic loading of modules and dependency resolution.
+ */
 (function() {
 
 var scriptBasePath = 'app.js/js';
@@ -11,39 +14,15 @@ var generators = [];
 var readies = [];
 var frozen = {};
 
-function define(id, deps, factory) {
-    if (!factory) {
-        if (!deps) {
-            deps = id;
-            id = null;            
-        }
-        factory = deps;
-        deps = id;
-        id = null;
-    }
-
-    if (typeof(factory) == "string") {
-        frozen[id] = {deps:deps, source:factory};
-    } else {
-        lastDefines[lastDefines.length] = {deps:deps, factory:factory};
-        if (id) {
-            finishDefininingModule(id);
-        }
+function require(name) {
+    name = require.resolve(name);
+    if (modules[name]) {
+        return modules[name].exports;
+    } else if (!queue[name]) {
+        loadScript(name, function(){});
     }
 }
-window.define = define;
-
-require.addGenerator = function(callback) {
-    generators[generators.length] = callback;
-};
-
-require.generate = function() {
-    var texts = [];
-    for (var i = 0; i < generators.length; ++i) {
-        texts[texts.length] = generators[i]();
-    }
-    return JSON.stringify(texts);
-};
+window.require = require;
 
 require.ready = function(cb) {
     readies[readies.length] = cb;
@@ -70,16 +49,41 @@ require.resolve = function(name, baseName) {
     }
 };
 
-// *************************************************************************************************
+require.addGenerator = function(callback) {
+    generators[generators.length] = callback;
+};
 
-function require(name) {
-    name = require.resolve(name);
-    if (modules[name]) {
-        return modules[name].exports;
-    } else if (!queue[name]) {
-        loadScript(name, function(){});
+require.generate = function() {
+    var texts = [];
+    for (var i = 0; i < generators.length; ++i) {
+        texts[texts.length] = generators[i]();
+    }
+    return JSON.stringify(texts);
+};
+
+function define(id, deps, factory) {
+    if (!factory) {
+        if (!deps) {
+            deps = id;
+            id = null;            
+        }
+        factory = deps;
+        deps = id;
+        id = null;
+    }
+
+    if (typeof(factory) == "string") {
+        frozen[id] = {deps:deps, source:factory};
+    } else {
+        lastDefines[lastDefines.length] = {deps:deps, factory:factory};
+        if (id) {
+            finishDefininingModule(id);
+        }
     }
 }
+window.define = define;
+
+// *************************************************************************************************
 
 function provide(name, module) {
     modules[name] = module;
@@ -174,7 +178,7 @@ function defineModule(name, deps, factory) {
         }
 
         params.push(localRequire, module.exports, module);
-        factory.apply(window, params);
+        factory.apply(window, [localRequire, module.exports, module]);
 
         provide(name, module);
     });
@@ -225,6 +229,12 @@ function urlForScript(name) {
 
 })();
 
+/**
+ * Eval in a sandbox where global and local application variables are not accessible.
+ *
+ * This function must be *outside* of all closures that may invoke it, otherwise it will not
+ * be a "sandbox" because eval will be able to reference variables in the application.
+ */
 window.sandboxEval = function(js, sandbox) {
     if (sandbox) {
         with (sandbox) {
@@ -233,4 +243,4 @@ window.sandboxEval = function(js, sandbox) {
     } else {
         return eval(js);
     }
-}
+};
