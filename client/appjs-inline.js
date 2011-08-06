@@ -27,7 +27,7 @@ require.ready = function(cb) {
 
 function define(name, fn) {
     if (typeof(fn) == "string") {
-        frozen[name] =function() { return sandboxEval(fn).apply(this, arguments); }
+        frozen[name] = function() { return sandboxEval(fn).apply(this, arguments); }
     } else {
         frozen[name] = fn;
     }
