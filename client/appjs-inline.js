@@ -11,11 +11,13 @@ var modules = {};
 var frozen = {};
 var readies = [];
 var mainModule;
+var loaded = false;
+var queuedName;
 
 function require(name) {
     if (name in modules) {
         return modules[name].exports;
-    } else {
+    } else if (loaded) {
         return thaw(name);
     }
 }
@@ -26,6 +28,9 @@ require.ready = function(cb) {
 }
 
 function define(name, fn) {
+    if (!queuedName) {
+        queuedName = name;
+    }
     if (typeof(fn) == "string") {
         frozen[name] = function() { return sandboxEval(fn).apply(this, arguments); }
     } else {
@@ -65,6 +70,11 @@ function thaw(name) {
         console.error('Module "' + name + '" not found');
     }
 }
+
+window.addEventListener("DOMContentLoaded", function() {
+    loaded = true;
+    thaw(queuedName);
+});
 
 })();
 

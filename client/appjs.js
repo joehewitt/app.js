@@ -20,7 +20,7 @@ function require(name) {
         return modules[name].exports;
     } else if (!queue[name]) {
         loadScript(name, function(){});
-    }
+    }        
 }
 window.require = require;
 
@@ -132,6 +132,7 @@ function loadScript(name, callback) {
                 
                 var script = document.createElement('script');
                 script.type = 'text/javascript';
+                script.async = true;
                 script.src = url;
                 script.onload = function() {
                     if (script.parentNode) {
@@ -145,7 +146,7 @@ function loadScript(name, callback) {
                     }
                 };
 
-                document.body.appendChild(script);
+                document.head.appendChild(script);
             }
         }
     }
