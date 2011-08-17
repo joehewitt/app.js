@@ -17,7 +17,11 @@ var queuedName;
 function require(name) {
     if (name in modules) {
         return modules[name].exports;
+    } else if (has("appjs")) {
+        // Don't wait for load event to thaw modules when on server
+        return thaw(name);
     } else if (loaded) {
+        // Wait for load event to thaw modules
         return thaw(name);
     }
 }
@@ -88,6 +92,7 @@ window.sandboxEval = function(js, sandbox) {
     }
 };
 
+// XXXjoe has.js doesn't have a test for this yet :(
 if (!document.querySelector) {
     (function(d){d=document,a=d.styleSheets[0]||d.createStyleSheet();d.querySelectorAll=function(e){a.addRule(e,'f:b');for(var l=d.all,b=0,c=[],f=l.length;b<f;b++)l[b].currentStyle.f&&c.push(l[b]);a.removeRule(0);return c}})();
 }
