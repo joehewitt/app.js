@@ -13,6 +13,8 @@ var lastDefines = [];
 var generators = [];
 var readies = [];
 var frozen = {};
+var loaded = false;
+var queuedName;
 
 function require(name) {
     name = require.resolve(name);
@@ -77,7 +79,11 @@ function define(id, deps, factory) {
     } else {
         lastDefines[lastDefines.length] = {deps:deps, factory:factory};
         if (id) {
-            finishDefininingModule(id);
+            if (loaded) {
+                finishDefininingModule(id);
+            } else {
+                queuedName = id;
+            }
         }
     }
 }
@@ -228,6 +234,13 @@ function urlForScript(name) {
 
     return scriptBasePath + '/' + name;
 }
+
+window.addEventListener("DOMContentLoaded", function() {
+    loaded = true;
+    if (queuedName) {
+        finishDefininingModule(queuedName);        
+    }
+});
 
 })();
 
