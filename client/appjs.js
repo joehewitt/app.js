@@ -4,7 +4,7 @@
  */
 (function() {
 
-var scriptBasePath = 'app.js/js';
+var scriptBasePath = '/app.js/js';
 var mainModuleName;
 var modules = {};
 var queue = {};
@@ -146,7 +146,8 @@ function loadScript(name, callback) {
                     }
                 };
 
-                document.head.appendChild(script);
+                var head = document.getElementsByTagName("head")[0];
+                head.appendChild(script);
             }
         }
     }
