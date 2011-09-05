@@ -1,5 +1,5 @@
 {
-  "name": "appjs",
+  "name": "app.js",
   "description": "Packages Node modules as browser apps.",
   "homepage": "http://github.com/joehewitt/app.js",
   "repository": {

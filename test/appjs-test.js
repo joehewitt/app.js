@@ -6,7 +6,7 @@ var path = require('path'),
 require.paths.unshift(path.join(__dirname, '..', 'lib'));
 require.paths.unshift(path.join(__dirname, 'modules'));
 
-var appjs = require('appjs');
+var appjs = require('app.js');
 
 // *************************************************************************************************
 
