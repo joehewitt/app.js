@@ -16,6 +16,7 @@
     "diskcache": "",
     "hascan": "",
     "express": "",
+    "express-cache": "",
     "jsdom": "",
     "mime": "",
     "optimist": "",
