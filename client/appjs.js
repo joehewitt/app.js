@@ -4,7 +4,6 @@
  */
 (function() {
 
-var scriptBasePath = '/app.js/js';
 var mainModuleName;
 var modules = {};
 var queue = {};
@@ -232,7 +231,7 @@ function urlForScript(name) {
         name += '.js';
     }
 
-    return scriptBasePath + '/' + name;
+    return appjsBase + '/' + name;
 }
 
 window.addEventListener("DOMContentLoaded", function() {
