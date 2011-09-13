@@ -11,7 +11,7 @@ App.js is a work-in-progress and is only intended for my personal use at this ti
 Installation
 ------------
 
-    $ npm install appjs
+    $ npm install app.js
 
 License 
 -------
