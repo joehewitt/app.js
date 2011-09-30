@@ -20,7 +20,7 @@
     "express-cache": "",
     "express-logger": "",
     "express-rewrite": "",
-    "jsdom": "",
+    "jsdom": "0.2.2",
     "mime": "",
     "optimist": "",
     "transformjs": "",
