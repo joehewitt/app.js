@@ -1,13 +1,15 @@
 {
   "name": "app.js",
   "description": "Packages Node modules as browser apps.",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "homepage": "http://github.com/joehewitt/app.js",
   "repository": {
-      "type": "git",
-      "url" : "http://github.com/joehewitt/app.js.git"
+    "type": "git",
+    "url": "git://github.com/joehewitt/app.js.git"
   },
-  "keywords": ["compressor"],
+  "keywords": [
+    "compressor"
+  ],
   "author": "Joe Hewitt <joe@joehewitt.com>",
   "contributors": [],
   "dependencies": {
@@ -28,8 +30,15 @@
     "underscore": "",
     "vows": ">=0.5.4"
   },
-  "bin" : {"appjs": "./bin/appjs"},
+  "bin": {
+    "appjs": "./bin/appjs"
+  },
   "main": "./lib/appjs",
-  "directories": {"test": "./test"},
-  "engines": {"node": ">=0.4.0"}
+  "directories": {
+    "test": "./test"
+  },
+  "engines": {
+    "node": ">=0.4.0"
+  },
+  "devDependencies": {}
 }
