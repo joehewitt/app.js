@@ -4,31 +4,42 @@
  */
 (function() {
 
-var mainModuleName;
+var mainModule;
 var modules = {};
-var queue = {};
-var queued = 0;
-var lastDefines = [];
+var moduleCallbacks = {};
 var generators = [];
 var readies = [];
 var frozen = {};
 var loaded = false;
 var queuedName;
 
-function require(name) {
+function require(name, cb) {
     name = require.resolve(name);
     if (modules[name]) {
-        return modules[name].exports;
-    } else if (!queue[name]) {
-        loadScript(name, function(){});
+        var module = modules[name].exports;
+        if (cb) {
+            cb(0, module);
+        } else {
+            return module;
+        }
+    } else {
+        return loadScript(name, cb);
     }        
 }
 window.require = require;
+
+require.stylesheet = function(url) {
+    var ss = document.createElement('link');
+    ss.rel = "stylesheet";
+    ss.href = url;
+    document.head.appendChild(ss);
+};
 
 require.ready = function(cb) {
     readies[readies.length] = cb;
 };
 
+// XXXjoe We probably don't need this since I don't think we leave relative requires in anymore
 require.resolve = function(name, baseName) {
     if (name[0] == '.') {
         // Relative paths inside of root modules are contained within the module, not its parent
@@ -62,78 +73,65 @@ require.generate = function() {
     return JSON.stringify(texts);
 };
 
-function define(id, deps, factory) {
+function define(name, deps, factory) {
+    // console.log('define', name)
     if (!factory) {
-        if (!deps) {
-            deps = id;
-            id = null;            
+        if (typeof(deps) == "function") {
+            factory = deps;
+            deps = null;
         }
-        factory = deps;
-        deps = id;
-        id = null;
+    }
+
+    // This implies that the first module to be defined will be the "root module".
+    // It would be better if this were more explicit.
+    if (!queuedName) {
+        queuedName = name;
     }
 
     if (typeof(factory) == "string") {
-        frozen[id] = {deps:deps, source:factory};
-    } else {
-        lastDefines[lastDefines.length] = {deps:deps, factory:factory};
-        if (id) {
-            if (loaded) {
-                finishDefininingModule(id);
-            } else {
-                queuedName = id;
-            }
-        }
+        var source = factory;
+        factory = function() { return sandboxEval(source).apply(this, arguments); }
     }
+
+    frozen[name] = {deps:deps, factory:factory};
 }
 window.define = define;
 
 // *************************************************************************************************
 
-function provide(name, module) {
-    modules[name] = module;
-    if (queue[name]) {
-        var callbacks = queue[name];
-        delete queue[name];
-        for (var i = 0; i < callbacks.length; ++i) {
-            callbacks[i](name, module);
-        }
-    }
-    if (name == mainModuleName) {
-        for (var i = 0; i < readies.length; ++i) {
-            readies[i]();
-        }
+function addModuleCallback(name, callback) {
+    var firstCallback = false;
 
-        if (has('appjs')) {
-            appjs.html = document.doctype + '\n' + document.outerHTML;
-        }
+    var callbacks = moduleCallbacks[name];
+    if (!callbacks) {
+        moduleCallbacks[name] = [];
+        firstCallback = true;
     }
+
+    if (callback) {
+        moduleCallbacks[name].push(callback);
+    }
+    return firstCallback;
 }
 
-function loadScript(name, callback) {
+function loadScript(name, cb) {
     if (name in modules) {
-        callback(name, modules[name]);
-    } else {
-        if (queue[name]) {
-            queue[name].push(callback);
+        var module = modules[name].exports;
+        if (cb) {
+            cb(0, module);
         } else {
-            queue[name] = [callback];
-            ++queued;
-
-            var cached = frozen[name];
-            if (cached) {
-                var source = cached.source;
-                delete frozen[name];
-                if (source.length) {
-                    var fn = eval(source);
-                    defineModule(name, cached.deps, fn);
-                } else {
-                    provide(name, {id: name});
-                }
-            } else if (has('appjs')) {
-                throw new Error("Not found")
+            return module;            
+        }
+    } else if (name in frozen) {
+        addModuleCallback(name, cb);
+        return thaw(name);
+    } else {
+        if (addModuleCallback(name, cb)) {
+            if (has('appjs')) {
+                throw new Error("Not found");
             } else {
-                var url = urlForScript(name) + location.search;
+                var search = location.search;
+                var url = urlForScript(name) + (search ? search + '&' : '?') + 'js=source&css=included';
                 
                 var script = document.createElement('script');
                 script.type = 'text/javascript';
@@ -143,12 +141,13 @@ function loadScript(name, callback) {
                     if (script.parentNode) {
                         script.parentNode.removeChild(script);
                     }
-                    finishDefininingModule(name);
+                    thaw(name);
                 };
                 script.onerror = function() {
                     if (script.parentNode) {
                         script.parentNode.removeChild(script);
                     }
+                    dispatchModuleError(name, new Error());
                 };
 
                 var head = document.getElementsByTagName("head")[0];
@@ -158,24 +157,25 @@ function loadScript(name, callback) {
     }
 }
 
-function finishDefininingModule(name) {
-    var defines = lastDefines;
-    lastDefines = [];
+function thaw(name) {
+    var cached = frozen[name];
+    if (cached) {
+        delete frozen[name];
 
-    if (!mainModuleName) {
-        mainModuleName = name;
-    }
-    
-    for (var i = 0; i < defines.length; ++i) {
-        var info = defines[i];
-        defineModule(name, info.deps, info.factory);
+        if (!mainModule) {
+            mainModule = name;
+        }
+        
+        return defineModule(name, cached.deps, cached.factory);
+    } else {
+        dispatchModuleError(name, new Error());        
     }
 }
 
 function defineModule(name, deps, factory) {
-    loadDependencies(name, deps, function(name, params) {
+    return loadDependencies(name, deps, function(err) {
         var module = {id: name, exports: {}};
-        modules[name] = module.exports;
+        modules[name] = module;
                 
         function localRequire(name, baseName) {
             return require(name, baseName);
@@ -184,35 +184,63 @@ function defineModule(name, deps, factory) {
             localRequire[p] = require[p];
         }
 
-        params.push(localRequire, module.exports, module);
         factory.apply(window, [localRequire, module.exports, module]);
 
-        provide(name, module);
+        dispatchModule(name, module.exports);
+        return module.exports;
     });
 }
 
-function loadDependencies(dependentId, deps, callback) {
-    var params = [];
+function loadDependencies(dependentId, deps, cb) {
     if (deps && deps.length) {
         var remaining = deps.length;
         for (var i = 0; i < deps.length; ++i) {
             var name = deps[i];
             if (name == 'require' || name == 'exports' || name == 'module') {
                 if (!--remaining) {
-                    callback(dependentId, params);
+                    return cb(0);
                 }
             } else {
                 name = deps[i] = require.resolve(name, dependentId);
-                loadScript(name, function(name, module) {
-                    params[deps.indexOf(name)] = module.exports;
+                loadScript(name, function(err, module) {
                     if (!--remaining) {
-                        callback(dependentId, params);
+                        return cb(err);
                     }
                 });
             }
         }
     } else {
-        callback(dependentId, params);
+        return cb(0);
+    }
+}
+
+function dispatchModuleError(name, err) {
+    if (moduleCallbacks[name]) {
+        var callbacks = moduleCallbacks[name];
+        delete moduleCallbacks[name];
+        for (var i = 0; i < callbacks.length; ++i) {
+            callbacks[i](err);
+        }
+    }
+}
+
+function dispatchModule(name, module) {
+    if (moduleCallbacks[name]) {
+        var callbacks = moduleCallbacks[name];
+        delete moduleCallbacks[name];
+        for (var i = 0; i < callbacks.length; ++i) {
+            callbacks[i](0, module);
+        }
+    }
+
+    if (name == mainModule) {
+        for (var i = 0; i < readies.length; ++i) {
+            readies[i]();
+        }
+
+        if (has('appjs')) {
+            appjs.html = document.doctype + '\n' + document.outerHTML;
+        }
     }
 }
 
@@ -237,7 +265,7 @@ function urlForScript(name) {
 window.addEventListener("DOMContentLoaded", function() {
     loaded = true;
     if (queuedName) {
-        finishDefininingModule(queuedName);        
+        thaw(queuedName);        
     }
 });
 

@@ -32,6 +32,8 @@ require.ready = function(cb) {
 }
 
 function define(name, fn) {
+    // This implies that the first module to be defined will be the "root module".
+    // It would be better if this were more explicit.
     if (!queuedName) {
         queuedName = name;
     }
