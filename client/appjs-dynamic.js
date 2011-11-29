@@ -13,7 +13,12 @@ var frozen = {};
 var loaded = false;
 var queuedName;
 
-function require(name, cb) {
+function require(name, timestamp, cb) {
+    if (typeof(timestamp) == 'function') {
+        cb = timestamp;
+        timestamp = null;
+    }
+
     name = require.resolve(name);
     if (modules[name]) {
         var module = modules[name].exports;
@@ -23,7 +28,7 @@ function require(name, cb) {
             return module;
         }
     } else {
-        return loadScript(name, cb);
+        return loadScript(name, timestamp, cb);
     }        
 }
 window.require = require;
@@ -114,7 +119,7 @@ function addModuleCallback(name, callback) {
     return firstCallback;
 }
 
-function loadScript(name, cb) {
+function loadScript(name, timestamp, cb) {
     if (name in modules) {
         var module = modules[name].exports;
         if (cb) {
@@ -131,8 +136,8 @@ function loadScript(name, cb) {
                 throw new Error("Not found");
             } else {
                 var search = location.search;
-                var url = urlForScript(name) + (search ? search + '&' : '?') + 'js=source&css=included';
-                
+                var url = urlForScript(name, timestamp) + (search ? search + '&' : '?') + 'js=source&css=included';
+
                 var script = document.createElement('script');
                 script.type = 'text/javascript';
                 script.async = true;
@@ -177,8 +182,8 @@ function defineModule(name, deps, factory) {
         var module = {id: name, exports: {}};
         modules[name] = module;
                 
-        function localRequire(name, baseName) {
-            return require(name, baseName);
+        function localRequire(name, timestamp, cb) {
+            return require(name, timestamp, cb);
         }
         for (var p in require) {
             localRequire[p] = require[p];
@@ -202,7 +207,7 @@ function loadDependencies(dependentId, deps, cb) {
                 }
             } else {
                 name = deps[i] = require.resolve(name, dependentId);
-                loadScript(name, function(err, module) {
+                loadScript(name, null, function(err, module) {
                     if (!--remaining) {
                         return cb(err);
                     }
@@ -253,12 +258,15 @@ function dirname(path) {
     }
 }
 
-function urlForScript(name) {
+function urlForScript(name, timestamp) {
     var ext = name.substr(name.length-3);
     if (name.indexOf('.') == -1) {
         name += '.js';
     }
 
+    if (timestamp) {
+        name += '@' + timestamp;
+    }
     return appjsBase + '/' + name;
 }
 
