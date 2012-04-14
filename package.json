@@ -1,7 +1,7 @@
 {
   "name": "app.js",
   "description": "Packages Node modules as browser apps.",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "homepage": "http://github.com/joehewitt/app.js",
   "repository": {
     "type": "git",
@@ -40,5 +40,6 @@
   "engines": {
     "node": ">=0.4.0"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "optionalDependencies": {}
 }
