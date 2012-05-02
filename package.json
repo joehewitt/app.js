@@ -19,7 +19,7 @@
     "diskcache": "",
     "hascan": "",
     "express": "",
-    "express-cache": "",
+    "express-store": "",
     "express-logger": "",
     "express-rewrite": "",
     "jsdom": "0.2.2",
