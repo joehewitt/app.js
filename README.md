@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/joehewitt/app.js.png)](http://travis-ci.org/joehewitt/app.js)
 app.js
 ========
 
