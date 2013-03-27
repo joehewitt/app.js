@@ -15,7 +15,7 @@
   "dependencies": {
     "async": "",
     "cssmin": "",
-    "express": "",
+    "express": "2.5.9",
     "jsdom": "0.2.2",
     "mime": "",
     "optimist": "",
