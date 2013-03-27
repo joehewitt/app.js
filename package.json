@@ -1,7 +1,7 @@
 {
   "name": "app.js",
   "description": "Packages Node modules as browser apps.",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "homepage": "http://github.com/joehewitt/app.js",
   "repository": {
     "type": "git",
