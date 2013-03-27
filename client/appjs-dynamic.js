@@ -181,7 +181,7 @@ function loadScript(name, timestamp, cb) {
                 throw new Error("Not found");
             } else {
                 var search = location.search;
-                var url = urlForScript(name, timestamp) + (search ? search + '&' : '?') + 'js=source&css=included';
+                var url = urlForScript(name, timestamp) + (search ? search + '&' : '?');
 
                 var script = document.createElement('script');
                 script.type = 'text/javascript';
