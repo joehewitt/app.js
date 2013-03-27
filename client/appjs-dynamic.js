@@ -1,4 +1,8 @@
 
+if (!self.has) {
+    self.has = function() { return false; }
+}
+
 /**
  * This is the development version of app.js which supports dynamic loading of modules and dependency resolution.
  */
@@ -9,6 +13,7 @@ var modules = {};
 var moduleCallbacks = {};
 var generators = [];
 var readies = [];
+var observers = [];
 var frozen = {};
 var loaded = false;
 var queuedName;
@@ -21,23 +26,63 @@ function require(name, timestamp, cb) {
 
     name = require.resolve(name);
     if (modules[name]) {
-        var module = modules[name].exports;
+        var module = modules[name];
         if (cb) {
             cb(0, module);
         } else {
-            return module;
+            return module.exports;
         }
     } else {
         return loadScript(name, timestamp, cb);
     }        
 }
-window.require = require;
+self.require = require;
+
+require.reload = function(name) {
+    delete modules[name];
+    require(name, new Date().getTime(), function(err, module) {
+        if (!err) {
+            for (var i = 0; i < observers.length; ++i) {
+                observers[i](module);
+            }
+        }
+    });    
+};
+
+require.observe = function(fn) {
+    observers.push(fn);
+};
+
+require.unobserve = function(fn) {
+    var index = observers.indexOf(fn);
+    if (index >= 0) {
+        observers.splice(index, 1);        
+    }
+};
 
 require.stylesheet = function(url) {
     var ss = document.createElement('link');
     ss.rel = "stylesheet";
     ss.href = url;
     document.head.appendChild(ss);
+};
+
+require.listen = function(url) {
+    var connection = new WebSocket(url);
+    connection.onmessage = function (e) {
+        var data = JSON.parse(e.data);
+        // console.log('message', data);
+        if (data.name == 'invalidate') {
+            if (data.URL.indexOf(appjsBase) == 0) {
+                // XXXXjoe Disable script reloading for now
+                var moduleName = urlToModuleName(data.URL);
+                // require.reload(moduleName);
+            } else if (data.URL.lastIndexOf('css') == data.URL.length - 3) {
+                // console.log('refresh', data.URL);
+                require.stylesheet(data.URL);
+            }
+        }
+    };
 };
 
 require.ready = function(cb) {
@@ -100,7 +145,7 @@ function define(name, deps, factory) {
 
     frozen[name] = {deps:deps, factory:factory};
 }
-window.define = define;
+self.define = define;
 
 // *************************************************************************************************
 
@@ -121,11 +166,11 @@ function addModuleCallback(name, callback) {
 
 function loadScript(name, timestamp, cb) {
     if (name in modules) {
-        var module = modules[name].exports;
+        var module = modules[name];
         if (cb) {
             cb(0, module);
         } else {
-            return module;            
+            return module.exports; 
         }
     } else if (name in frozen) {
         addModuleCallback(name, cb);
@@ -189,9 +234,11 @@ function defineModule(name, deps, factory) {
             localRequire[p] = require[p];
         }
 
-        factory.apply(window, [localRequire, module.exports, module]);
+        require.module = module;
+        factory.apply(self, [localRequire, module.exports, module]);
+        delete require.module;
 
-        dispatchModule(name, module.exports);
+        dispatchModule(name, module);
         return module.exports;
     });
 }
@@ -258,6 +305,14 @@ function dirname(path) {
     }
 }
 
+function urlToModuleName(URL) {
+    var moduleName = URL.substr(appjsBase.length + 1);
+    var q = moduleName.indexOf('?');
+    moduleName = q != -1 ? moduleName.substr(0, q) : moduleName;
+    var dot = moduleName.lastIndexOf('.');
+    return dot != -1 ? moduleName.substr(0, dot) : moduleName;    
+}
+
 function urlForScript(name, timestamp) {
     var ext = name.substr(name.length-3);
     if (name.indexOf('.') == -1) {
@@ -270,7 +325,7 @@ function urlForScript(name, timestamp) {
     return appjsBase + '/' + name;
 }
 
-window.addEventListener("DOMContentLoaded", function() {
+self.addEventListener("DOMContentLoaded", function() {
     loaded = true;
     if (queuedName) {
         thaw(queuedName);        
@@ -285,7 +340,7 @@ window.addEventListener("DOMContentLoaded", function() {
  * This function must be *outside* of all closures that may invoke it, otherwise it will not
  * be a "sandbox" because eval will be able to reference variables in the application.
  */
-window.sandboxEval = function(js, sandbox) {
+self.sandboxEval = function(js, sandbox) {
     if (sandbox) {
         with (sandbox) {
             return eval(js);
@@ -296,6 +351,7 @@ window.sandboxEval = function(js, sandbox) {
 };
 
 // XXXjoe has.js doesn't have a test for this yet :(
-if (!document.querySelector) {
+if (self.document && !document.querySelector) {
     (function(d){d=document,a=d.styleSheets[0]||d.createStyleSheet();d.querySelectorAll=function(e){a.addRule(e,'f:b');for(var l=d.all,b=0,c=[],f=l.length;b<f;b++)l[b].currentStyle.f&&c.push(l[b]);a.removeRule(0);return c}})();
 }
+    

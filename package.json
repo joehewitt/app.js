@@ -15,20 +15,20 @@
   "dependencies": {
     "async": "",
     "cssmin": "",
-    "dandy": "",
-    "diskcache": "",
-    "hascan": "",
     "express": "",
-    "express-cache": "",
-    "express-logger": "",
-    "express-rewrite": "",
     "jsdom": "0.2.2",
     "mime": "",
     "optimist": "",
-    "transformjs": "",
     "uglify-js": "",
     "underscore": "",
-    "vows": ">=0.5.4"
+    "vows": ">=0.5.4",
+    "dandy": "",
+    "diskcache": "",
+    "hascan": "",
+    "express-store": "",
+    "express-logger": "",
+    "express-rewrite": "",
+    "transformjs": ""
   },
   "bin": {
     "appjs": "./bin/appjs"
