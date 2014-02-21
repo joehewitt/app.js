@@ -1,22 +1,63 @@
+/**
+ * This is the development version of app.js which supports dynamic loading of modules and dependency resolution.
+ */
 
 if (!self.has) {
     self.has = function() { return false; }
 }
 
-/**
- * This is the development version of app.js which supports dynamic loading of modules and dependency resolution.
- */
+// *************************************************************************************************
+
 (function() {
+
+var frozen = {};
+var queuedName;
+
+function define(name, deps, factory) {
+    if (!factory) {
+        if (typeof(deps) == "function") {
+            factory = deps;
+            deps = null;
+        }
+    }
+
+    // This implies that the first module to be defined will be the "root module".
+    // It would be better if this were more explicit.
+    if (!queuedName) {
+        queuedName = name;
+    }
+
+    if (typeof(factory) == "string") {
+        var source = factory;
+        factory = function() { return sandboxEval(source).apply(this, arguments); }
+    }
+
+    frozen[name] = {deps:deps, factory:factory};
+}
+self.define = define;
+
+define.env = function(moduleName, globals) {
+    var require = createEnvironment(frozen, globals||{});
+    return require(moduleName);
+}
+
+self.addEventListener("DOMContentLoaded", function() {
+    if (queuedName) {
+        define.env(queuedName, self);
+    }
+});
+
+// *************************************************************************************************
+
+function createEnvironment(frozen, globals) {
 
 var mainModule;
 var modules = {};
 var moduleCallbacks = {};
+var defining = {};
 var generators = [];
 var readies = [];
 var observers = [];
-var frozen = {};
-var loaded = false;
-var queuedName;
 
 function require(name, timestamp, cb) {
     if (typeof(timestamp) == 'function') {
@@ -33,12 +74,19 @@ function require(name, timestamp, cb) {
             return module.exports;
         }
     } else {
-        return loadScript(name, timestamp, cb);
+        loadScript(name, timestamp, cb);
+        var module = modules[name];
+        return module ? module.exports : null;
     }        
 }
-self.require = require;
 
 require.reload = function(name) {
+    for (var i = 0; i < observers.length; ++i) {
+        if (!observers[i](name, true)) {
+            return;
+        }
+    }
+
     delete modules[name];
     require(name, new Date().getTime(), function(err, module) {
         if (!err) {
@@ -72,11 +120,13 @@ require.listen = function(url) {
     connection.onmessage = function (e) {
         var data = JSON.parse(e.data);
         // console.log('message', data);
-        if (data.name == 'invalidate') {
+        if (data.name == 'reload') {
+            window.location.reload();
+        } else if (data.name == 'invalidate') {
             if (data.URL.indexOf(appjsBase) == 0) {
                 // XXXXjoe Disable script reloading for now
                 var moduleName = urlToModuleName(data.URL);
-                // require.reload(moduleName);
+                require.reload(moduleName);
             } else if (data.URL.lastIndexOf('css') == data.URL.length - 3) {
                 // console.log('refresh', data.URL);
                 require.stylesheet(data.URL);
@@ -123,29 +173,13 @@ require.generate = function() {
     return JSON.stringify(texts);
 };
 
-function define(name, deps, factory) {
-    // console.log('define', name)
-    if (!factory) {
-        if (typeof(deps) == "function") {
-            factory = deps;
-            deps = null;
+require.getModuleId = function(module) {
+    for (var name in modules) {
+        if (modules[name].exports == module) {
+            return name;
         }
     }
-
-    // This implies that the first module to be defined will be the "root module".
-    // It would be better if this were more explicit.
-    if (!queuedName) {
-        queuedName = name;
-    }
-
-    if (typeof(factory) == "string") {
-        var source = factory;
-        factory = function() { return sandboxEval(source).apply(this, arguments); }
-    }
-
-    frozen[name] = {deps:deps, factory:factory};
-}
-self.define = define;
+};
 
 // *************************************************************************************************
 
@@ -172,7 +206,7 @@ function loadScript(name, timestamp, cb) {
         } else {
             return module.exports; 
         }
-    } else if (name in frozen) {
+    } else if (name in frozen && !(name in defining)) {
         addModuleCallback(name, cb);
         return thaw(name);
     } else {
@@ -210,7 +244,7 @@ function loadScript(name, timestamp, cb) {
 function thaw(name) {
     var cached = frozen[name];
     if (cached) {
-        delete frozen[name];
+        // delete frozen[name];
 
         if (!mainModule) {
             mainModule = name;
@@ -223,7 +257,10 @@ function thaw(name) {
 }
 
 function defineModule(name, deps, factory) {
+    defining[name] = true;
     return loadDependencies(name, deps, function(err) {
+        delete defining[name];
+
         var module = {id: name, exports: {}};
         modules[name] = module;
                 
@@ -235,7 +272,7 @@ function defineModule(name, deps, factory) {
         }
 
         require.module = module;
-        factory.apply(self, [localRequire, module.exports, module]);
+        factory.apply(self, [localRequire, module.exports, module, globals]);
         delete require.module;
 
         dispatchModule(name, module);
@@ -325,14 +362,17 @@ function urlForScript(name, timestamp) {
     return appjsBase + '/' + name;
 }
 
-self.addEventListener("DOMContentLoaded", function() {
-    loaded = true;
-    if (queuedName) {
-        thaw(queuedName);        
-    }
-});
+if (globals) {
+    globals.require = require;    
+}
+
+return require;
+
+}
 
 })();
+
+// *************************************************************************************************
 
 /**
  * Eval in a sandbox where global and local application variables are not accessible.

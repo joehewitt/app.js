@@ -19,7 +19,6 @@
     "jsdom": "0.2.2",
     "mime": "",
     "optimist": "",
-    "uglify-js": "",
     "underscore": "",
     "vows": ">=0.5.4",
     "dandy": "",
