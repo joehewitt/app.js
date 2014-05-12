@@ -16,7 +16,7 @@
     "async": "",
     "cssmin": "",
     "express": "2.5.9",
-    "jsdom": "0.2.2",
+    "jsdom": "0.10.5",
     "mime": "",
     "optimist": "",
     "underscore": "",
