@@ -24,6 +24,8 @@
     "dandy": "",
     "diskcache": "",
     "hascan": "",
+    "ncp": "",
+    "mkdir": "",
     "express-store": "",
     "express-logger": "",
     "express-rewrite": "",

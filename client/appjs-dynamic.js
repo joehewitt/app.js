@@ -215,7 +215,7 @@ function loadScript(name, timestamp, cb) {
                 throw new Error("Not found");
             } else {
                 var search = location.search;
-                var url = urlForScript(name, timestamp) + (search ? search + '&' : '?');
+                var url = urlForScript(name, timestamp) + (search ? search + '&' : '');
 
                 var script = document.createElement('script');
                 script.type = 'text/javascript';
@@ -357,7 +357,7 @@ function urlForScript(name, timestamp) {
     }
 
     if (timestamp) {
-        name += '@' + timestamp;
+        name += ':' + timestamp;
     }
     return appjsBase + '/' + name;
 }
