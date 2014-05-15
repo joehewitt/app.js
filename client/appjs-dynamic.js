@@ -3,7 +3,14 @@
  */
 
 if (!self.has) {
-    self.has = function() { return false; }
+    self.has = function(feature) { 
+        // XXXjoe Temporary hack until we include has.js with inlined scripts
+        if (feature == "dom-addeventlistener") {
+            return true;
+        } else {
+            return false;            
+        }
+    }
 }
 
 // *************************************************************************************************
