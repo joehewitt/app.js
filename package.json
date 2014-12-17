@@ -14,8 +14,11 @@
   "contributors": [],
   "dependencies": {
     "async": "",
+    "body-parser": "",
+    "cookie-parser": "",
+    "qs": "",
     "cssmin": "",
-    "express": "2.5.9",
+    "express": "4.10.6",
     "jsdom": "0.10.5",
     "mime": "",
     "optimist": "",
@@ -28,7 +31,6 @@
     "mkdir": "",
     "express-store": "",
     "express-logger": "",
-    "express-rewrite": "",
     "transformjs": ""
   },
   "bin": {
@@ -39,7 +41,7 @@
     "test": "./test"
   },
   "engines": {
-    "node": ">=0.4.0"
+    "node": ">=0.10.0"
   },
   "devDependencies": {},
   "optionalDependencies": {}
